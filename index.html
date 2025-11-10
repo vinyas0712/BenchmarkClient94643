@@ -29,7 +29,10 @@ if (window.RProfiler) {
     // Queue some events before the "real library" is loaded
     
     cpRumTag('variation', 'ywwow');
-    cpRumTag('usePageHide', true);
+    cpRumTag('usePageHide', false);
+    cpRumTag('consentv2', { analytics_storage: 'granted' })
+    cpRumTag('conversion', 20, 1200);
+    cpRumTag('appError', 10, 'undefined error');
   </script>
  
 
