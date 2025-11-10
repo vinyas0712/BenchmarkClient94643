@@ -10,6 +10,14 @@
   <script defer src='https://portalstage.catchpoint.com/jp/94643/latest/InitialLoadScript.js'></script>
   <!-- <script type="application/javascript" src="rprofiler.js"></script> -->
   <!-- <script type="application/javascript" src="rprofilersdsdsd.js"></script> -->
+   <!-- The following code changes the beacon from unload/beforeunload to pageHide -->
+<script language="javascript" type="text/javascript">
+if (window.RProfiler) {
+    window.RProfiler.usePageHide();
+} else {
+    window.addEventListener('GlimpseLoaded', () => window.RProfiler.usePageHide());
+}
+</script> 
 
  <script>
     // Initialize the queue
@@ -21,6 +29,7 @@
     // Queue some events before the "real library" is loaded
     
     cpRumTag('variation', 'ywwow');
+    cpRumTag('usePageHide', true);
   </script>
  
 
