@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consent Page</title>
+  <script defer src='https://portalstage.catchpoint.com/jp/94643/latest/InitialLoadScript.js'></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    p {
+      font-size: 16px;
+      color: #555;
+      line-height: 1.5;
+    }
+    .consent-box {
+      margin-top: 20px;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Consent Form</h1>
+    <p>
+      Please read the following information carefully before proceeding. By checking the box below, you agree to the terms and conditions outlined in this consent form.
+    </p>
+    <div class="consent-box">
+      <input type="checkbox" id="consent" onclick="toggleButton()">
+      <label for="consent">I agree to the terms and conditions</label>
+    </div>
+    <br>
+    <button id="continueBtn" disabled onclick="nextPage()">Continue</button>
+  </div>
+
+  <script>
+    function toggleButton() {
+      const checkbox = document.getElementById('consent');
+      const button = document.getElementById('continueBtn');
+      button.disabled = !checkbox.checked;
+    }
+
+    function nextPage() {
+      // Redirect to next page
+      window.location.href = "page6.html";
+    }
+  </script>
+  <script type="application/javascript" src="main.js"></script>
+</body>
+</html>
