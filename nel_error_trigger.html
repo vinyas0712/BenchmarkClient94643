@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script defer src='https://portalstage.catchpoint.com/jp/94643/latest/InitialLoadScript.js'></script>
+<title>NEL Error Trigger Page</title>
+
+
+
+
+
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+button { margin: 10px; padding: 10px 15px; font-size: 16px; }
+</style>
+</head>
+<body>
+<h1>Trigger Network Errors for NEL Testing</h1>
+
+<!-- Buttons -->
+<button onclick="triggerDNSFailure()">Trigger DNS Failure</button>
+<button onclick="triggerSSLFailure()">Trigger SSL Failure</button>
+<button onclick="triggerServerError()">Trigger 500 Error</button>
+<button onclick="trigger504Error()">Trigger 504 Error</button>
+<button onclick="triggerRedirect()">Trigger 301 Redirect</button>
+<button onclick="trigger404Error()">Trigger 404 Error</button>
+<button onclick="triggerTCPClosed()">Trigger TCP Closed</button>
+<button onclick="triggerTCPTimeout()">Trigger TCP Timeout</button>
+
+<script>
+function triggerDNSFailure() {
+    fetch("https://nonexistent-domain-xyz123.com")
+        .catch(err => console.log("DNS Failure triggered:", err));
+}
+
+function triggerSSLFailure() {
+    fetch("https://expired.badssl.com/")
+        .catch(err => console.log("SSL Failure triggered:", err));
+}
+
+function triggerServerError() {
+    fetch("https://httpstat.us/500")
+        .then(response => console.log("500 Error triggered:", response.status))
+        .catch(err => console.log("Error:", err));
+}
+
+function trigger504Error() {
+    fetch("https://httpstat.us/504")
+        .then(response => console.log("504 Error triggered:", response.status))
+        .catch(err => console.log("Error:", err));
+}
+
+function triggerRedirect() {
+    fetch("https://httpstat.us/301")
+        .then(response => console.log("301 Redirect triggered:", response.status))
+        .catch(err => console.log("Error:", err));
+}
+
+function trigger404Error() {
+    fetch("https://httpstat.us/404")
+        .then(response => console.log("404 Error triggered:", response.status))
+        .catch(err => console.log("Error:", err));
+}
+
+function triggerTCPClosed() {
+    fetch("https://127.0.0.1:81") // Port likely closed
+        .catch(err => console.log("TCP Closed triggered:", err));
+}
+
+function triggerTCPTimeout() {
+    fetch("https://10.255.255.1") // Reserved IP, no response
+        .catch(err => console.log("TCP Timeout triggered:", err));
+}
+</script>
+</body>
+</html>
