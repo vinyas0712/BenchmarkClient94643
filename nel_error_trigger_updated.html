@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Network Error Simulation Page (NEL Origin-Scoped)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+    h1 { margin-bottom: 0.5rem; }
+    .desc { color: #555; margin-bottom: 1.5rem; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+    button { padding: 0.75rem 1rem; font-size: 0.95rem; cursor: pointer; }
+    #log { white-space: pre-wrap; background: #f6f7f9; border: 1px solid #ddd; padding: 1rem; min-height: 6rem; }
+    .small { font-size: 0.85rem; color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Network Error Simulation Page</h1>
+  <p class="desc">Trigger errors from the <strong>same origin or same-site subdomains</strong> so Network Error Logging (NEL) will capture them.</p>
+
+  <div class="row">
+    <button id="btn-dns">Simulate DNS Failure (NXDOMAIN)</button>
+    <button id="btn-connect">Simulate Connect Failure (TCP)</button>
+    <button id="btn-ssl">Simulate SSL/TLS Failure (Bad Cert)</button>
+    <button id="btn-http">Simulate Server Status Error (404 & 500)</button>
+    <button id="btn-redirect">Simulate 301 Redirect (same-origin)</button>
+    <button id="btn-timeout">Simulate 504 Timeout (function)</button>
+  </div>
+
+  <div id="log" aria-live="polite"></div>
+  <p class="small">Open DevTools → Network to watch the failing fetches. NEL reports are sent out-of-band to your configured <code>Report-To</code> endpoint.</p>
+
+  <script>
+    // ==== Configuration ====
+    // Replace PLACEHOLDER_APEX with your apex domain (e.g., example.com)
+    const APEX = 'PLACEHOLDER_APEX';
+    const ORIGIN = window.location.origin; // main page origin hosting NEL
+
+    // Subdomains used to trigger failures (create DNS/servers as described in README):
+    const DNS_FAIL_URL     = `https://nohost.${APEX}/missing.jpg`;      // no DNS record -> NXDOMAIN
+    const CONNECT_FAIL_URL = `https://dead-end.${APEX}/test.txt`;       // resolves but drops/refuses 443
+    const SSL_FAIL_URL     = `https://expired.${APEX}/`;                // serves expired/mismatched cert
+
+    // Same-origin routes for status errors:
+    const HTTP_404_URL = ORIGIN + '/assets/not-found-404.png';          // static 404 file
+    const HTTP_500_URL = ORIGIN + '/api/always-500';                    // Netlify Function returning 500
+    const HTTP_301_URL = ORIGIN + '/redirect-to-home';                  // Netlify redirect -> 301
+    const HTTP_504_URL = ORIGIN + '/api/always-504';                    // Netlify Function returning 504
+
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      el.innerHTML = `${el.innerHTML}\n[${time}] ${msg}`;
+    };
+
+    async function tryFetch(url, label, opts={}) {
+      log(`${label}: fetching ${url}`);
+      try {
+        const res = await fetch(url, { mode: 'no-cors', cache: 'no-store', ...opts });
+        log(`${label}: fetch attempted (NEL should capture any network failure).`);
+      } catch (e) {
+        log(`${label}: fetch threw (${e && e.message ? e.message : e}).`);
+      }
+    }
+
+    document.getElementById('btn-dns').addEventListener('click', () =>
+      tryFetch(DNS_FAIL_URL, 'DNS Failure (NXDOMAIN)')
+    );
+
+    document.getElementById('btn-connect').addEventListener('click', () =>
+      tryFetch(CONNECT_FAIL_URL, 'TCP Connect Failure')
+    );
+
+    document.getElementById('btn-ssl').addEventListener('click', () =>
+      tryFetch(SSL_FAIL_URL, 'SSL/TLS Handshake Failure')
+    );
+
+    document.getElementById('btn-http').addEventListener('click', async () => {
+      await tryFetch(HTTP_404_URL, 'HTTP Status Error (404)');
+      await tryFetch(HTTP_500_URL, 'HTTP Status Error (500)');
+    });
+
+    document.getElementById('btn-redirect').addEventListener('click', () =>
+      tryFetch(HTTP_301_URL, 'HTTP Redirect (301)')
+    );
+
+    document.getElementById('btn-timeout').addEventListener('click', () =>
+      tryFetch(HTTP_504_URL, 'HTTP Gateway Timeout (504)')
+    );
+
+    log('Ensure the main page response includes "Report-To" and "NEL" headers.');
+  </script>
+</body>
+</html>
