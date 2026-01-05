@@ -1,69 +1,136 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <title>NEL: DNS, TCP (Same Domain) Error Triggers</title>
   <script defer src='https://portalstage.catchpoint.com/jp/94643/latest/InitialLoadScript.js'></script>
-  <title>NEL Origin-Scoped: DNS, TCP, and SSL Error Triggers</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
-    h1 { margin-bottom: 0.5rem; }
-    .desc { color: #555; margin-bottom: 1.25rem; }
-    .row { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
-    button { padding: 0.7rem 1rem; font-size: 0.95rem; cursor: pointer; }
-    #log { white-space: pre-wrap; background: #f6f7f9; border: 1px solid #ddd; padding: 1rem; min-height: 6rem; }
-    .small { font-size: 0.85rem; color: #666; }
-    code { background: #f1f3f5; padding: 0 0.25rem; }
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 2rem; line-height: 1.5; }
+    h1 { margin-bottom: 0.25rem; }
+    .desc { color: #555; margin-bottom: 1rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; }
+    button { padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid #333; background: #fff; cursor: pointer; }
+    button[disabled] { cursor: not-allowed; opacity: 0.6; }
+    button:hover:not([disabled]) { background: #f5f5f5; }
+    code { background: #f6f8fa; padding: 0 0.3rem; border-radius: 4px; }
+    .hint { font-size: 0.9rem; color: #666; margin-top: 0.75rem; }
+    .log { margin-top: 1rem; font-size: 0.95rem; }
+    .log div { margin: 0.15rem 0; }
+    ul { padding-left: 1.1rem; }
   </style>
 </head>
 <body>
-  <h1>Network Error Triggers (Same-Site)</h1>
-  <p class="desc">These buttons trigger errors from the same-site subdomains of <code>exquisite-gingersnap-99c11c.netlify.app</code> so <strong>Network Error Logging (NEL)</strong> will capture them under a policy with <code>include_subdomains:true</code>.</p>
+  <h1>NEL: DNS & TCP Error Triggers (Same Domain)</h1>
+  <p class="desc">
+    Origin: <strong>https://exquisite-gingersnap-99c11c.netlify.app</strong>. Open <strong>DevTools → Network</strong>, then click each button. 
+    These are designed to produce <em>network-level failures</em> (not HTTP 404).
+  </p>
 
-  <div class="row">
-    <button id="btn-dns">DNS Failure (NXDOMAIN)</button>
-    <button id="btn-connect">TCP Connect Failure</button>
-    <button id="btn-ssl">SSL/TLS Handshake Failure</button>
+  <div class="grid">
+    <!-- DNS Failure -->
+    <div class="card">
+      <h3>DNS Failure (NXDOMAIN)</h3>
+      <p>
+        Uses a sub-subdomain of your Netlify host that does not exist, so DNS resolution fails and DevTools shows
+        <code>(failed)</code> with <code>ERR_NAME_NOT_RESOLVED</code> (sometimes shown as <code>ERR_FAILED</code>).
+      </p>
+      <p><strong>Target:</strong>
+        <code>https://does-not-exist.exquisite-gingersnap-99c11c.netlify.app/nel-dns.json</code>
+      </p>
+      <button id="btn-dns">Trigger DNS Failure</button>
+      <div class="hint">Expected (Network tab): Status <em>(failed)</em> • Error: <em>ERR_NAME_NOT_RESOLVED</em> / <em>ERR_FAILED</em></div>
+    </div>
+
+    <!-- TCP Connect Failure -->
+    <div class="card">
+      <h3>TCP Connect Failure (Same Host, Closed Port)</h3>
+      <p>
+        Attempts to connect to your host on a closed/non-HTTPS port. The TCP handshake should fail, yielding
+        <code>ERR_CONNECTION_REFUSED</code> or <code>ERR_CONNECTION_TIMED_OUT</code>.
+      </p>
+      <p><strong>Target:</strong>
+        <code>http://exquisite-gingersnap-99c11c.netlify.app:81/nel-tcp.json</code>
+      </p>
+      <button id="btn-tcp">Trigger TCP Failure</button>
+      <div class="hint">Expected (Network tab): Status <em>(failed)</em> • Error: <em>ERR_CONNECTION_REFUSED</em> or <em>ERR_CONNECTION_TIMED_OUT</em></div>
+    </div>
+
+    <!-- SSL/TLS Handshake Failure (Explanation) -->
+    <div class="card">
+      <h3>SSL/TLS Handshake Failure (Same Host)</h3>
+      <p>
+        Netlify provides a valid certificate for <code>*.netlify.app</code> on port 443. Without a host under your control
+        that presents an invalid/expired/self-signed certificate, a pure TLS handshake failure cannot be produced
+        <em>from the same host</em>.
+      </p>
+      <p><strong>Target (not possible on same host):</strong>
+        <code>https://exquisite-gingersnap-99c11c.netlify.app/nel-ssl.json</code>
+      </p>
+      <button id="btn-ssl" disabled title="Needs a host with an invalid certificate">Trigger SSL/TLS Failure (requires invalid cert host)</button>
+      <div class="hint">
+        If you can provide a custom subdomain with an invalid certificate, I’ll plug it in and enable this button.
+      </div>
+    </div>
   </div>
 
-  <div id="log" aria-live="polite"></div>
-  <p class="small">Open DevTools → Network to see the failing fetches. NEL reports are sent via <code>Report-To</code> to your collector.</p>
+  <div class="log" id="log"></div>
 
   <script>
-    // Fixed to your Netlify site and its subdomains
-    const DNS_FAIL_URL     = 'https://nohost.exquisite-gingersnap-99c11c.netlify.app/missing.jpg';
-    const CONNECT_FAIL_URL = 'https://dead-end.exquisite-gingersnap-99c11c.netlify.app/test.txt';
-    const SSL_FAIL_URL     = 'https://expired.exquisite-gingersnap-99c11c.netlify.app/';
-
-    const log = (msg) => {
-      const el = document.getElementById('log');
-      const time = new Date().toLocaleTimeString();
-      el.innerHTML = `${el.innerHTML}\n[${time}] ${msg}`;
+    const log = document.getElementById('log');
+    const addLog = (msg) => {
+      const d = document.createElement('div');
+      d.textContent = `${new Date().toLocaleTimeString()} — ${msg}`;
+      log.appendChild(d);
     };
 
-    async function tryFetch(url, label) {
-      log(`${label}: fetching ${url}`);
+    // Fire a fetch in 'no-cors' mode: the browser still issues the request,
+    // and true network-layer failures appear in DevTools as (failed) with ERR_* codes.
+    async function trigger(url) {
+      addLog(`Requesting: ${url}`);
       try {
-        const res = await fetch(url, { mode: 'no-cors', cache: 'no-store' });
-        log(`${label}: fetch attempted (NEL should capture any network failure).`);
+        await fetch(url, {
+          mode: 'no-cors',
+          cache: 'no-cache',
+          redirect: 'follow',
+          // No credentials to avoid private network prompts in some environments
+        });
+        addLog(`Fetch initiated: ${url}`);
       } catch (e) {
-        log(`${label}: fetch threw (${e && e.message ? e.message : e}).`);
+        // For immediate network failures fetch may reject; either way DevTools captures the failure
+        addLog(`Fetch error: ${e?.message || e}`);
       }
     }
 
+    // Same-domain derived DNS failure (non-existent sub-subdomain)
     document.getElementById('btn-dns').addEventListener('click', () =>
-      tryFetch(DNS_FAIL_URL, 'DNS Failure (NXDOMAIN)')
+      trigger('https://does-not-exist.exquisite-gingersnap-99c11c.netlify.app/nel-dns.json')
     );
 
-    document.getElementById('btn-connect').addEventListener('click', () =>
-      tryFetch(CONNECT_FAIL_URL, 'TCP Connect Failure')
+    // Same host TCP failure (closed port)
+    document.getElementById('btn-tcp').addEventListener('click', () =>
+      trigger('http://exquisite-gingersnap-99c11c.netlify.app:81/nel-tcp.json')
     );
 
-    document.getElementById('btn-ssl').addEventListener('click', () =>
-      tryFetch(SSL_FAIL_URL, 'SSL/TLS Handshake Failure')
-    );
-
-    log('Ensure the main page response has "Report-To" and "NEL" headers with include_subdomains:true.');
+    // SSL/TLS button disabled; if you provide an invalid-cert host, replace the URL below and enable the button
+    // document.getElementById('btn-ssl').addEventListener('click', () =>
+    //   trigger('https://invalid-cert.your-domain.example/nel-ssl.json')
+    // );
   </script>
+
+  <hr />
+  <p class="hint">
+    Tips:
+    <ul>
+      <li>Disable cache in DevTools. Clear the Network panel and click one button at a time.</li>
+      <li>DNS failure should show <strong>(failed)</strong> and <strong>ERR_NAME_NOT_RESOLVED</strong> (sometimes displayed as <strong>ERR_FAILED</strong>).</li>
+      <li>TCP failure should show <strong>(failed)</strong> and <strong>ERR_CONNECTION_REFUSED</strong> or <strong>ERR_CONNECTION_TIMED_OUT</strong>.</li>
+      <li>SSL handshake failures require an origin presenting an <em>invalid certificate</em>. Netlify’s managed cert for your host is valid; provide a different host/subdomain with an invalid cert if needed.</li>
+    </ul>
+  </p>
 </body>
 </html>
+      
