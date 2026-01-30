@@ -10,6 +10,17 @@
   
   <script defer src='https://portalstage.catchpoint.com/jp/94643/latest/InitialLoadScript.js'></script>
 
+
+  <script>
+    window.CPRUMDataLayer = window.CPRUMDataLayer || [];
+
+    function cpRumTag() {
+      window.CPRUMDataLayer.push(arguments);
+    }
+
+    cpRumTag('benchmarkLog', true);
+  </script>
+  
 <!-- The following code changes the beacon from unload/beforeunload to pageHide -->
 <script language="javascript" type="text/javascript">
 if (window.RProfiler) {
