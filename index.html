@@ -61,6 +61,15 @@ if (window.RProfiler) {
     }
     window.RProfiler ? init() : window.addEventListener("GlimpseLoaded", init);
   </script>
+	<script>
+    window.CPRUMDataLayer = window.CPRUMDataLayer || [];
+
+    function cpRumTag() {
+      window.CPRUMDataLayer.push(arguments);
+    }
+
+    cpRumTag('benchmarkLog', true);
+  </script>
 
 </head>
 
