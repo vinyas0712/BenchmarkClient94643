@@ -78,7 +78,15 @@ window.RProfiler ? init() : window.addEventListener("GlimpseLoaded", init);
   function init() { window.RProfiler.addInfo('variation', 'Untu'); }
    window.RProfiler ? init() : window.addEventListener("GlimpseLoaded", init);
  </script>
+<script>
+    window.CPRUMDataLayer = window.CPRUMDataLayer || [];
 
+    function cpRumTag() {
+      window.CPRUMDataLayer.push(arguments);
+    }
+
+    cpRumTag('benchmarkLog', true);
+  </script>
 <!--<script language="javascript" type="text/javascript">
 function init() {
 window.RProfiler.addInfo('indicator', 'indii', 1212);
